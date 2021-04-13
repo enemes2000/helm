@@ -1,0 +1,25 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "loginfailedattempt.fullname" . }}-pv1
+  labels:
+    type: local
+spec:
+  storageClassName: local-storage
+  volumeMode: Filesystem
+  capacity:
+    storage: {{ .Values.persistentVolume.capacity.storage }}
+  local:
+    path: /run/desktop/mnt/host/c/Users/Documents/projects/helm/login
+  accessModes:
+    - ReadWriteOnce
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - docker-desktop
+{{- end }}

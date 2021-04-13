@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "loginfailedattempt.fullname" . }}
+  labels:
+    {{- include "loginfailedattempt.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8089
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "loginfailedattempt.selectorLabels" . | nindent 4 }}

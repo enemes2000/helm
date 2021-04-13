@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "loginfailedattempt.fullname" . }}
+  labels: 
+    {{- include "loginfailedattempt.mylabel" .  | nindent 4}}  
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "loginfailedattempt.mylabel" .  | nindent 6}}
+  template:
+    metadata:
+      labels:
+        {{- include "loginfailedattempt.mylabel" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "loginfailedattempt.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          env:
+          - name: SECURITY_PROTOCOL
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: security.protocol
+          - name: SSL_TRUSTSTORE_LOCATION
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: ssl.truststore.location
+          - name: SSL_TRUSTSTORE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: ssl.truststore.password
+          - name: SASL_MECHANISM
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: sasl.mechanism
+          - name: SASL_JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: sasl.jaas.config
+          - name: SASL_LOGIN_CALLBACK_HANDLER_CLASS
+            valueFrom:
+              secretKeyRef:
+                name: loginfailedattempt-secret
+                key: sasl.login.callback.handler.class
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+          - mountPath: "/kafkaStreams"
+            name: {{ include "loginfailedattempt.fullname" . }}-pv-storage
+          - name: truststore
+            mountPath: /etc/ssl/certs/cert.pem
+      volumes:
+      - name: {{ include "loginfailedattempt.fullname" . }}-pv-storage
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "loginfailedattempt.fullname" . }}-pv1-claim
+      {{- else }}
+        emptyDir: {}
+      {{- end -}}
+     - name: truststore-volume
+       secret:
+         secretName: truststore       
+       
